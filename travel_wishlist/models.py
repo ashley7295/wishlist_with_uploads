@@ -37,3 +37,9 @@ class Place(models.Model):
     def __str__(self):
         photo_str = self.photo.url if self.photo else 'no photo'
         return f'{self.pk}: {self.name} visited? {self.visited} on {self.date_visited}\nPhoto {photo_str}'
+
+class CatFact(models.Model):
+    fact = models.CharField(max_length=500)
+
+    def __str__(self):
+        return self.fact

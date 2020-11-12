@@ -23,9 +23,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '3*5+g(sb+0dq*4m_cf@oedqyf$-$3%qcmtwu+6t=hkg#=r4+7p'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+if os.getenv('GAE_INSTANCE'):
+    DEBUG = False
+else:
+    DEBUG = True
+    
+
+ALLOWED_HOSTS = ['*']
 
 LOGIN_URL = '/admin'
 # Application definition
@@ -76,11 +81,24 @@ WSGI_APPLICATION = 'wishlist.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'places',
+        'USER': 'traveler',
+        'PASSWORD': os.getenv('TRAVELER_PW'),
+        'HOST': '/cloudsql/travel-wishlist-24749:us-central1:wishlist-db',
+        'PORT': '5432'
+
     }
 }
 
+if not os.getenv('GAE_INSTANCE'):
+    #DATABASES['default']['HOST'] = '127.0.0.1'
+    DATABASES = {
+        'default' :{
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3')
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -121,10 +139,25 @@ USE_TZ = True
 # Specify a location to copy static files to when running python manage.py collectstatic
 STATIC_ROOT = os.path.join(BASE_DIR, 'www', 'static')
 
-STATIC_URL = '/static/'
 
 # Media URL, for user-created media - becomes part of URL when images are displayed
-MEDIA_URL = '/media/'
+#MEDIA_URL = '/media/'
 
 # Where in the file system to save user-uploaded files
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+if os.getenv('GAE_INSTANCE'):
+
+    GS_STATIC_FILE_BUCKET= 'travel-wishlist-24749.appspot.com'
+    STATIC_URL = f'https://storage.cloud.google.com/{GS_STATIC_FILE_BUCKET}/static/'
+
+    GS_BUCKET_NAME = 'user-uploaded-img'
+    MEDIA_URL = f'https://storage.cloud.google.com/{GS_BUCKET_NAME}/media/'
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+
+    from google.oauth2 import service_account
+    GS_CREDENTIALS = service_account.Credentials.from_service_account_file('travel-wishlist-credentials.json')
+else:
+    STATIC_URL = '/static/'
+    MEDIA_URL = '/media/'
